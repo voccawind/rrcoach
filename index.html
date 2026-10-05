@@ -173,7 +173,9 @@ html{background:var(--bg)}
 .progress i{display:block;height:100%;background:var(--accent);transition:width .3s}
 
 /* Rest overlay */
-.overlay{position:fixed;inset:0;background:var(--bg);z-index:20;display:flex;flex-direction:column;align-items:center;padding:calc(30px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px));gap:8px;overflow:auto}
+.overlay{position:fixed;inset:0;background:var(--bg);z-index:20;display:flex;flex-direction:column;align-items:center;padding:calc(30px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px));gap:8px;overflow:auto;overscroll-behavior:contain}
+/* Pause-Overlay offen → Seite dahinter ausblenden, sonst scrollt man sie unsichtbar mit */
+body:has(> .overlay) > #app{display:none}
 .overlay .inner{width:100%;max-width:528px;display:flex;flex-direction:column;align-items:center;gap:8px;flex:1}
 .timerbig{font-family:var(--font-display);font-size:96px;font-weight:800;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
 .track{width:100%;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
@@ -379,7 +381,7 @@ h1[tabindex="-1"]:focus,.title[tabindex="-1"]:focus,h1[tabindex="-1"]:focus-visi
 <script>
 // ===================== RR Coach – Web =====================
 'use strict';
-const VERSION = 'web 4.1.1 · github';
+const VERSION = 'web 4.1.2 · github';
 // ---------- Sprache ----------
 const LANG_KEY = 'rrcoach.lang';
 function detectLang() {
