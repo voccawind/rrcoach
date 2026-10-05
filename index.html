@@ -379,7 +379,7 @@ h1[tabindex="-1"]:focus,.title[tabindex="-1"]:focus,h1[tabindex="-1"]:focus-visi
 <script>
 // ===================== RR Coach – Web =====================
 'use strict';
-const VERSION = 'web 4.1.0 · netlify';
+const VERSION = 'web 4.1.1 · github';
 // ---------- Sprache ----------
 const LANG_KEY = 'rrcoach.lang';
 function detectLang() {
@@ -1969,7 +1969,7 @@ function WorkoutView(mode, resume) {
       if (this.phase === 'warmup') this.phase = (mode === 'rr' && STORE.s.settings.skill) ? 'skill' : 'strength';
       else if (this.phase === 'skill') this.phase = 'strength';
       this.persist();
-      Nav.refresh();
+      Nav.refresh(); window.scrollTo(0, 0);
     },
     // --- Warm-up ---
     renderWarmup() {
@@ -2000,6 +2000,7 @@ function WorkoutView(mode, resume) {
       if (this.i >= this.steps.length) { this.finish(); return h('div'); }
       const step = this.steps[this.i], p = step.prog ? PROG_BY_KEY[step.prog] : MINP, ex = step.ex; this.ex = ex; this.p = p;
       if (!this.strStart) { this.strStart = Date.now(); this.s0 = this.i; }
+      if (this.shownI !== this.i) { this.shownI = this.i; window.scrollTo(0, 0); }  // neuer Satz → oben beginnen
       const color = pcText(p);
       this.hold = null;
       const doneBtn = this.doneBtn = h('button', { class: 'btn', id: 'wk-done', onclick: () => { const H = this.hold; if (H && !H.running && !H.leading && !H.done) { Snd.unlock(); H.go(); } else this.setDone(); } }, L('Satz fertig ✓', 'Set done ✓'));
@@ -2123,7 +2124,6 @@ function WorkoutView(mode, resume) {
       this.persist();
       if (this.i >= this.steps.length) { this.finish(); return; }
       if (step.rest > 0) this.showRest(step.rest); else Nav.refresh();
-      snackbar(L('Satz eingetragen', 'Set logged'), L('Rückgängig', 'Undo'), () => this.undo(true));
     },
     undo(wasSet) {
       this.clearTimers(); this.restEnd = null; if (this.overlay) { this.overlay.remove(); this.overlay = null; }
