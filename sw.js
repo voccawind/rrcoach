@@ -1,5 +1,5 @@
 // RR Coach – Service Worker (network-first, Offline-Fallback aus dem Cache)
-const CACHE = 'rrcoach-v37';
+const CACHE = 'rrcoach-v38';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-180-v2.png', './icon-192-v2.png', './icon-512-v2.png', './icon-maskable-512-v2.png', './favicon-32-v2.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {

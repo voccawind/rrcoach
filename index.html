@@ -74,7 +74,7 @@ h1,h2,h3{margin:0;font-family:var(--font-display);text-wrap:balance}
 
 /* Shell */
 #app{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));padding-top:env(safe-area-inset-top,0px)}
-html{background:var(--bg)}
+html{background:var(--bg);scrollbar-color:var(--accent) transparent}
 .screen{display:flex;flex-direction:column;flex:1;min-height:0}
 .hdr{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;min-height:56px;padding-block:10px 6px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5}
 .hdr h1{font-size:20px;font-weight:700;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -381,7 +381,7 @@ h1[tabindex="-1"]:focus,.title[tabindex="-1"]:focus,h1[tabindex="-1"]:focus-visi
 <script>
 // ===================== RR Coach – Web =====================
 'use strict';
-const VERSION = 'web 4.1.2 · github';
+const VERSION = 'web 4.1.3 · github';
 // ---------- Sprache ----------
 const LANG_KEY = 'rrcoach.lang';
 function detectLang() {
@@ -1985,7 +1985,7 @@ function WorkoutView(mode, resume) {
     },
     // --- Skill ---
     renderSkill() {
-      const s = this.wkScreen(L('Skill-Arbeit', 'Skill work'), footerBar(h('button', { class: 'btn ghost', onclick: () => this.nextPhase() }, L('Weiter zum Krafttraining ›', 'On to strength work ›'))));
+      const s = this.wkScreen(L('Skill-Arbeit', 'Skill work'), footerBar(h('button', { class: 'btn', onclick: () => this.nextPhase() }, L('Weiter zum Krafttraining ›', 'On to strength work ›'))));
       s.content.append(h('div', { class: 'small muted' }, L('5–10 Minuten Handstand & Stützhalte üben, Pausen nach Bedarf. Timer starten – oder weiter.', '5–10 minutes of handstand & support hold practice, rest as needed. Start the timer – or move on.')));
       const big = h('div', { class: 'timerbig', style: 'text-align:center' }, fmtTime(this.skillLeft));
       const bar = h('i', { style: `width:${(1 - this.skillLeft / 600) * 100}%` });
