@@ -462,6 +462,69 @@ function equipmentSuggestions(have) {
   return out.sort((a, b) => a[2] - b[2]);
 }
 
+// ---------- Klimmzug-Variante (Stange / Ringe, Ober- / Untergriff) ----------
+// Überschreibt Texte der Klimmzug-Stufen je nach Gerät & Griff. Keys bleiben gleich → Verlauf & Stufen unberührt.
+const PULL_BASE = JSON.parse(JSON.stringify(PROG_BY_KEY.pullup.levels));
+const PULL_TIPS_BASE = JSON.parse(JSON.stringify(D.PROG_TIPS.pullup));
+const PULL_VARIANTS = {
+  rings: {
+    scap_pulls: { name: L('Scapular Pulls an Ringen', 'Ring Scapular Pulls'), cues: L(['Arme gestreckt, Handflächen zeigen zueinander', 'Schulterblätter nach unten & zusammen ziehen', 'Brust leicht anheben, 1–2 Sek. oben halten', 'Langsam zurück in den passiven Hang, Ringe ruhig halten'], ['Arms straight, palms facing each other', 'Pull shoulder blades down & together', 'Lift the chest slightly, hold 1–2 s at the top', 'Slowly return to a passive hang, keep the rings still']), tip: L('Stell dir vor, du drückst die Ringe nach unten, statt dich hochzuziehen.', 'Imagine pushing the rings down instead of pulling yourself up.') },
+    arch_hangs: { name: L('Arch Hangs an Ringen', 'Ring Arch Hangs'), cues: L(['Neutralgriff, Ringe etwa schulterbreit', 'Brust nach vorne, Beine leicht zurück (Bogen)', 'Schulterblätter aktiv tief & zusammen', 'Ellbogen leicht gebeugt, Ringe nah am Körper'], ['Neutral grip, rings about shoulder width', 'Chest forward, legs slightly back (arch)', 'Shoulder blades actively down & together', 'Elbows slightly bent, rings close to the body']) },
+    neg_pullup: { name: L('Negative Ringklimmzüge', 'Ring Pull-up Negatives'), cues: L(['Oben starten (Box/Sprung), Ringe an der Brust', '3–5 Sek. kontrolliert absenken', 'Ringe drehen mit: oben Handflächen eher zu dir, unten zueinander', 'Core anspannen, Ringe nicht pendeln lassen'], ['Start at the top (box/jump), rings at your chest', 'Lower under control for 3–5 s', 'Let the rings turn: palms toward you at the top, facing each other at the bottom', 'Brace the core, keep the rings from swinging']) },
+    pullup: { name: L('Ringklimmzüge', 'Ring Pull-ups'), cues: L(['Aus dem aktiven Hang starten, Handflächen zueinander', 'Hochziehen, bis die Ringe an der Brust sind – Ringe drehen frei mit', '2–3 Sek. kontrolliert absenken', 'Ringe eng führen, nicht nach außen wandern lassen'], ['Start from an active hang, palms facing each other', 'Pull until the rings touch your chest – let them rotate freely', 'Lower under control for 2–3 s', 'Keep the rings close, don\'t let them drift outward']), desc: L('Der Klimmzug an Ringen: Die Ringe drehen mit, das schont Ellbogen und Handgelenke. Mit Band-Unterstützung schließt du die Lücke zwischen Negativen und freien Klimmzügen.', 'The pull-up on rings: the rings rotate with you, which is easier on elbows and wrists. Band-assisted pull-ups close the gap between negatives and strict pull-ups.'), tip: L('Band oben an beiden Ringgurten einhängen, unter Knie oder Fuß. Sobald 3×8 mit Band klappen: dünneres Band oder ohne.', 'Loop the band over both ring straps, under one knee or foot. Once 3×8 works with the band: thinner band or none.') },
+    lsit_pullup: { name: L('L-Sit-Ringklimmzüge', 'Ring L-sit Pull-ups'), tip: L('An Ringen haben die Beine automatisch Platz. Zu schwer? Mit angezogenen Knien (Tuck) beginnen.', 'On rings your legs have room by default. Too hard? Start with knees tucked.') },
+    weighted_pullup: { name: L('Ringklimmzüge mit Gewicht', 'Weighted Ring Pull-ups'), tip: L('Kein Gewicht? Rucksack mit Wasserflaschen tut es auch. Später als Muscle-up-Vorbereitung: einzelne Sätze im False Grip.', 'No weights? A backpack with water bottles works too. Later, as muscle-up prep: some sets with a false grip.') },
+  },
+  under: {
+    arch_hangs: { cues: L(['Untergriff, schulterbreit', 'Brust nach vorne, Beine leicht zurück (Bogen)', 'Schulterblätter aktiv tief & zusammen', 'Ellbogen leicht gebeugt, nicht durchdrücken'], ['Underhand grip, shoulder width', 'Chest forward, legs slightly back (arch)', 'Shoulder blades actively down & together', 'Elbows slightly bent, don\'t lock them']) },
+    neg_pullup: { name: L('Negativ-Chin-ups', 'Chin-up Negatives'), en: 'Chin-up Negatives', video: null },
+    pullup: { name: 'Chin-ups', en: 'Chin-ups', video: null, cues: L(['Untergriff (Handflächen zu dir), schulterbreit', 'Aus dem aktiven Hang starten, Kinn über die Stange', '2–3 Sek. kontrolliert absenken', 'Voller Bewegungsumfang – unten Arme gestreckt'], ['Underhand grip (palms toward you), shoulder width', 'Start from an active hang, chin over the bar', 'Lower under control for 2–3 s', 'Full range of motion – arms straight at the bottom']), desc: L('Klimmzug im Untergriff: Der Bizeps hilft mehr mit, deshalb für die meisten etwas leichter als im Obergriff. Mit Band schließt du die Lücke zwischen Negativen und freien Chin-ups.', 'Pull-up with an underhand grip: the biceps help more, so for most people it\'s a bit easier than overhand. Band-assisted chin-ups close the gap between negatives and strict chin-ups.') },
+    lsit_pullup: { name: L('L-Sit-Chin-ups', 'L-sit Chin-ups'), en: 'L-sit Chin-ups' },
+    weighted_pullup: { name: L('Chin-ups mit Gewicht', 'Weighted Chin-ups'), en: 'Weighted Chin-ups', video: null },
+  },
+};
+function pullHas(have) { const s = new Set(have); return { bar: s.has('doorbar') || s.has('rack'), rings: s.has('rings') }; }
+// Ringe, wenn nur Ringe da sind oder beides da ist (Standard) und nicht „Stange“ gewählt wurde
+function pullDevice(state) {
+  const { bar, rings } = pullHas(state.equipment || []);
+  if (rings && !bar) return 'rings';
+  if (bar && !rings) return 'bar';
+  if (bar && rings) return state.settings.pull_dev === 'bar' ? 'bar' : 'rings';
+  return 'bar';
+}
+function pullGrip(state) { return pullDevice(state) === 'bar' && state.settings.pull_grip === 'under' ? 'under' : 'over'; }
+function applyPullVariant(state) {
+  const dev = pullDevice(state), ov = dev === 'rings' ? PULL_VARIANTS.rings : pullGrip(state) === 'under' ? PULL_VARIANTS.under : {};
+  PROG_BY_KEY.pullup.levels.forEach((l, i) => {
+    for (const k of Object.keys(l)) delete l[k];
+    Object.assign(l, JSON.parse(JSON.stringify(PULL_BASE[i])), ov[l.key] || ov[PULL_BASE[i].key] || {});
+  });
+  // Tipps sind für Ringe geschrieben – an der Stange Ring-Hinweise ersetzen
+  const tp = D.PROG_TIPS.pullup, base = JSON.parse(JSON.stringify(PULL_TIPS_BASE));
+  for (const k of Object.keys(tp)) delete tp[k];
+  Object.assign(tp, base);
+  if (dev === 'bar') {
+    const fix = t => t.replace(/zu den Ringen/g, 'zur Stange').replace(/über den Ringen/g, 'über der Stange').replace(/over the rings/g, 'over the bar').replace(/chest to the rings/g, 'chest to the bar');
+    tp.plan = tp.plan.map(([a, b]) => [a, fix(b)]);
+    tp.tips = tp.tips.filter((_, i) => i !== 6).map(([a, b], i) => i === 0
+      ? (pullGrip(state) === 'under'
+        ? [L('Untergriff (Chin-ups)', 'Underhand grip (chin-ups)'), L('Im Untergriff hilft der Bizeps mehr mit – für die meisten der leichtere Einstieg. Ziehen Ellbogen oder Handgelenke, wechsle zwischendurch in den Obergriff.', 'With an underhand grip the biceps help more – the easier start for most people. If elbows or wrists complain, switch to overhand now and then.')]
+        : [L('Obergriff (Pull-ups)', 'Overhand grip (pull-ups)'), L('Hände etwas weiter als schulterbreit. Ist der Obergriff noch zu schwer oder ziehen die Ellbogen, kannst du unter Klimmzug → Gerät & Griff auf Untergriff (Chin-ups) wechseln.', 'Hands slightly wider than shoulder width. If overhand is still too hard or your elbows complain, switch to underhand (chin-ups) under Pull-up → Equipment & grip.')])
+      : [a, fix(b)]);
+  }
+}
+function pullSetupCard() {
+  const st = STORE.s, { bar, rings } = pullHas(st.equipment), dev = pullDevice(st);
+  if (!bar) return null;   // nur Ringe oder gar nichts: nichts zu wählen
+  const box = h('div', { class: 'card stack', style: 'gap:8px' }, h('div', { class: 'h2' }, L('Gerät & Griff', 'Equipment & grip')));
+  if (rings) box.append(seg([['rings', L('Ringe', 'Rings')], ['bar', L('Stange', 'Bar')]], dev, v => { st.settings.pull_dev = v; STORE.save(); Nav.refresh(); }));
+  if (dev === 'bar') box.append(seg([['over', L('Obergriff', 'Overhand')], ['under', L('Untergriff (Chin-ups)', 'Underhand (chin-ups)')]], pullGrip(st), v => { st.settings.pull_grip = v; STORE.save(); Nav.refresh(); }));
+  box.append(h('div', { class: 'small muted' }, dev === 'rings'
+    ? L('An Ringen: Neutralgriff, die Ringe drehen frei mit. Eine eigene Griffwahl gibt es hier nicht – Chin-ups an Ringen sind unangenehm, weil die Ringe wegdrehen.', 'On rings: neutral grip, the rings rotate freely. There\'s no separate grip choice – chin-ups on rings are awkward because the rings twist away.')
+    : L('Stufen und Verlauf bleiben gleich, nur Übungsnamen, Technik-Hinweise und Videos passen sich an.', 'Levels and history stay the same; only exercise names, technique cues and videos change.')));
+  return box;
+}
+
 // ---------- Store ----------
 const LS_KEY = 'rrcoach.state.v1';
 function defaultState() {
@@ -472,7 +535,7 @@ function defaultState() {
     barbell: { squat: false, hinge: false },
     settings: { warmup: true, skill: true, shortcut: 'RR Workout', weight_kg: 80, rest_pair: 90, rest_core: 60,
       sound: true, min_circuits: 3, min_rest: 30, min_extras: [], min_lunges_squat: false, hold_lead: 5, name: '',
-      compact: false, extra_set: false, videos: {}, lastBackup: null, icon: 'b', vibrate: true, shortcut_ready: false, dev: false, deload_on: true, deload_every: 6, deload: null, deload_last: null, deload_snooze: null, theme: 'auto', contrast: null, bigtext: false, coffee_on: null, coffee_url: '', coffee_home_hide: 0 },
+      compact: false, extra_set: false, videos: {}, lastBackup: null, icon: 'b', vibrate: true, shortcut_ready: false, dev: false, deload_on: true, deload_every: 6, deload: null, deload_last: null, deload_snooze: null, theme: 'auto', contrast: null, bigtext: false, coffee_on: null, coffee_url: '', coffee_home_hide: 0, pull_dev: null, pull_grip: 'over' },
     nutrition: defaultNutrition(), weights: [],
     history: [], stall: {}, updatedAt: 0, mig: Object.fromEntries(LEVEL_INSERTS.map(x => [x[0], 1])),
   };
@@ -480,7 +543,7 @@ function defaultState() {
 // [Migrations-ID, Progression, eingefügt an Index]
 const LEVEL_INSERTS = [['dip_assist', 'dip', 1], ['row_feet', 'row', 3]];
 class Store {
-  constructor() { this.s = defaultState(); this.db = null; this.dbDoc = null; this.saveTimer = null; this.lastError = null; this.load(); }
+  constructor() { this.s = defaultState(); this.db = null; this.dbDoc = null; this.saveTimer = null; this.lastError = null; this.load(); applyPullVariant(this.s); }
   load() {
     try {
       const raw = localStorage.getItem(LS_KEY);
@@ -498,8 +561,10 @@ class Store {
     for (const k in base.settings) if (!(k in data.settings)) data.settings[k] = base.settings[k];
     for (const k in base.nutrition) if (!(k in data.nutrition)) data.nutrition[k] = base.nutrition[k];
     this.s = data;
+    applyPullVariant(this.s);
   }
   save() {
+    applyPullVariant(this.s);
     this.s.updatedAt = Date.now();
     try { localStorage.setItem(LS_KEY, JSON.stringify(this.s)); this.lastError = null; }
     catch (e) { this.lastError = String(e); }
@@ -828,7 +893,8 @@ function parseYouTube(str) {
 }
 function videoFor(ex) { const own = (STORE.s.settings.videos || {})[ex.key]; return own || ex.video || null; }
 function ringQuery(ex, progKey) {
-  const extra = STORE.equipment.includes('rings') && progKey && D.RING_QUERY[progKey];
+  const rings = progKey === 'pullup' ? pullDevice(STORE.s) === 'rings' : STORE.equipment.includes('rings');
+  const extra = rings && progKey && D.RING_QUERY[progKey];
   return extra ? `${ex.en} ${extra}` : ex.en;
 }
 function videoBlock(ex, progKey) {
@@ -1822,6 +1888,7 @@ function ProgDetailView(key) {
       const s = screen(p.name), c = s.content, idx = STORE.levelIndex(key);
       c.append(h('div', { class: 'small muted' }, LANG === 'de' ? `${p.en} · ${p.muscles}` : p.muscles));
       if (p.barbell_alt && STORE.equipment.includes('barbell')) c.append(h('div', { class: 'card sub row between' }, h('div', null, h('div', { class: 'h2' }, L('Langhantel statt Progression', 'Barbell instead of progression')), h('div', { class: 'small muted' }, p.barbell_alt.name + ' · 3×5–8')), switchEl(STORE.s.barbell[key], v => { STORE.s.barbell[key] = v; STORE.save(); }, 'bb-' + key, L('Langhantel statt Progression', 'Barbell instead of progression'))));
+      if (key === 'pullup') { const pc = pullSetupCard(); if (pc) c.append(pc); }
       if (p.levels.some(l => l.band_ok)) {
         const cur = STORE.band(key) || 'ohne';
         c.append(h('div', { class: 'card stack', style: 'gap:8px' }, h('div', { class: 'h2' }, L('Band-Unterstützung', 'Band assistance')), seg([['ohne', bandName(null)], ['leicht', bandName('leicht')], ['mittel', bandName('mittel')], ['stark', bandName('stark')]], cur, v => STORE.setBand(key, v === 'ohne' ? null : v))));
