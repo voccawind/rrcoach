@@ -381,7 +381,7 @@ h1[tabindex="-1"]:focus,.title[tabindex="-1"]:focus,h1[tabindex="-1"]:focus-visi
 <script>
 // ===================== RR Coach – Web =====================
 'use strict';
-const VERSION = 'web 4.1.3 · github';
+const VERSION = 'web 4.2.0 · github';
 // ---------- Sprache ----------
 const LANG_KEY = 'rrcoach.lang';
 function detectLang() {
@@ -1728,11 +1728,19 @@ function AboutView() {
       const s = screen(L('Über RR Coach', 'About RR Coach')), c = s.content;
       const sec = (t, ...body) => h('div', { class: 'card stack', style: 'gap:6px' }, h('div', { class: 'h2' }, t), ...body.map(x => typeof x === 'string' ? h('div', { class: 'small' }, x) : x));
       c.append(sec(L('Was ist das?', 'What is this?'), L('Ein kostenloses, nicht-kommerzielles Hobbyprojekt: ein Trainingsbegleiter für die Recommended Routine (RR) von r/bodyweightfitness – mit Fokus auf Ringe und Bänder.', 'A free, non-commercial hobby project: a training companion for the r/bodyweightfitness Recommended Routine (RR) – with a focus on rings and bands.')));
+      const ext = (href, txt) => h('a', { class: 'link', href, target: '_blank', rel: 'noopener', style: 'text-align:left' }, txt);
+      c.append(sec(L('🙏 Danke', '🙏 Thank you'),
+        L('Die Recommended Routine stammt von der Community r/bodyweightfitness, die sie frei und kostenlos für alle zugänglich macht. Ohne diese Arbeit gäbe es diese App nicht.', 'The Recommended Routine comes from the r/bodyweightfitness community, which makes it freely available to everyone. Without their work, this app would not exist.'),
+        L('Besonderer Dank an Antranik Kizirian: Mit seinem ausführlichen Erklärvideo und seiner Seite zur Routine hat er die RR für unzählige Menschen verständlich und zugänglich gemacht.', 'Special thanks to Antranik Kizirian: with his in-depth explanation video and his page on the routine, he made the RR understandable and accessible for countless people.'),
+        ext('https://antranik.org/rr/', L('Antraniks Seite zur Recommended Routine ↗', "Antranik's page on the Recommended Routine ↗")),
+        ext('https://antranik.org/', 'antranik.org ↗'),
+        ext('https://www.reddit.com/r/bodyweightfitness/', 'r/bodyweightfitness ↗'),
+        h('div', { class: 'small muted' }, L('RR Coach ist ein unabhängiges Hobbyprojekt und steht in keiner Verbindung zu r/bodyweightfitness oder Antranik.', 'RR Coach is an independent hobby project and is not affiliated with r/bodyweightfitness or Antranik.'))));
       c.append(sec(L('Datenschutz', 'Privacy'),
         L('Es gibt kein Konto, keinen Server für deine Daten, kein Tracking, keine Cookies und keine Werbung. Alles, was du einträgst (Trainings, Stufen, Gewicht, Ernährungsprofil), wird nur im Speicher dieses Browsers auf deinem Gerät abgelegt.', 'There is no account, no server storing your data, no tracking, no cookies and no ads. Everything you enter (workouts, progressions, weight, nutrition profile) is stored only in this browser on your device.'),
         L('Übungsvideos werden erst geladen, wenn du sie öffnest – dann über youtube-nocookie.com (YouTube/Google). Die Schriftarten sind in die App eingebettet.', 'Exercise videos only load when you open them – via youtube-nocookie.com (YouTube/Google). Fonts are embedded in the app.'),
         L('Nachteil: Löschst du die App oder Websitedaten oder wechselst du das Gerät, sind die Daten weg. Deshalb: ab und zu unter Einstellungen → „Sichern & Wiederherstellen“ exportieren.', 'Downside: if you delete the app or website data or switch devices, your data is gone. So export a backup now and then under Settings → "Backup & restore".')));
-      c.append(sec(L('Quellen & Dank', 'Sources & thanks'),
+      c.append(sec(L('Quellen', 'Sources'),
         L('Übungen, Progressionen und Regeln folgen dem Wiki der Recommended Routine von r/bodyweightfitness. Die Videos gehören ihren jeweiligen Urheber:innen auf YouTube. Die Ernährungshinweise sind allgemeine Faustregeln (Mifflin-St Jeor, Katch-McArdle, gängige Protein-Empfehlungen).', 'Exercises, progressions and rules follow the r/bodyweightfitness Recommended Routine wiki. Videos belong to their respective creators on YouTube. Nutrition guidance uses common rules of thumb (Mifflin-St Jeor, Katch-McArdle, standard protein recommendations).'),
         h('a', { class: 'link', href: 'https://www.reddit.com/r/bodyweightfitness/wiki/kb/recommended_routine', target: '_blank', rel: 'noopener' }, L('RR-Wiki auf Reddit ↗', 'RR wiki on Reddit ↗'))));
       c.append(sec(L('Hinweis', 'Disclaimer'), L('Keine medizinische oder Ernährungsberatung. Training auf eigene Verantwortung. Gelenkschmerzen (nicht Muskelkater) sind ein Signal, eine Stufe zurückzugehen. Bei Vorerkrankungen, Verletzungen oder Essstörungen bitte ärztlich abklären.', 'Not medical or dietary advice. Train at your own risk. Joint pain (not muscle soreness) is a signal to step back a progression. If you have medical conditions, injuries or an eating disorder, please consult a doctor.')));
@@ -1878,12 +1886,18 @@ function VideoView(title, vid, ex, progKey) { return { render() { const s = scre
 // ---------- Workout ----------
 // ---------- Zeitschätzung ----------
 // grobes Modell: Wiederholungs-Satz ~45 s inkl. Einrichten, Halte-Satz = Zielzeit + Vorlauf + 20 s, dazu die geplanten Pausen
-function stepCost(step) { const ex = step.ex; return ex.kind === 'hold' ? Math.max(10, STORE.suggestedValue(ex, 1)) + (+STORE.s.settings.hold_lead || 0) + 20 : 45; }
-function stepsCost(steps, from, to) { let t = 0; const end = to == null ? steps.length : to; for (let j = from; j < end; j++) { t += stepCost(steps[j]); if (j < steps.length - 1) t += steps[j].rest || 0; } return t; }
+// fester Anteil (Haltezeit + Vorlauf, wird nicht schneller) und beeinflussbarer Anteil (Einrichten, Wiederholungen)
+function stepFixed(step) { const ex = step.ex; return ex.kind === 'hold' ? Math.max(10, STORE.suggestedValue(ex, 1)) + (+STORE.s.settings.hold_lead || 0) : 0; }
+function stepFlex(step) { return step.ex.kind === 'hold' ? 20 : 45; }
+// fs/fr: Tempo-Faktoren für den beeinflussbaren Satzanteil und die Pausen (1 = Modell)
+function stepCost(step, fs = 1) { return stepFixed(step) + stepFlex(step) * fs; }
+function stepsCost(steps, from, to, fs = 1, fr = 1) { let t = 0; const end = to == null ? steps.length : to; for (let j = from; j < end; j++) { t += stepCost(steps[j], fs); if (j < steps.length - 1) t += (steps[j].rest || 0) * fr; } return t; }
 function warmupSec(mode) { return mode === 'rr' ? 480 : 180; }
+// dein gelerntes Tempo aus früheren Trainings (pro Modus); ohne Verlauf gilt das Modell
+function tempoOf(mode) { const t = (STORE.s.settings.tempo || {})[mode]; return t && t.n ? t : { set: 1, rest: 1, warm: warmupSec(mode), n: 0 }; }
 function workoutEstimate(mode) {
-  const st = STORE.s.settings, steps = mode === 'rr' ? STORE.buildSteps() : STORE.buildStepsMinimal();
-  return stepsCost(steps, 0) + (st.warmup ? warmupSec(mode) : 0) + (mode === 'rr' && st.skill ? 600 : 0);
+  const st = STORE.s.settings, steps = mode === 'rr' ? STORE.buildSteps() : STORE.buildStepsMinimal(), T = tempoOf(mode);
+  return stepsCost(steps, 0, null, T.set, T.rest) + (st.warmup ? T.warm : 0) + (mode === 'rr' && st.skill ? 600 : 0);
 }
 function fmtClock(sec) { return new Date(Date.now() + sec * 1000).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' }); }
 function etaText(sec) { const m = Math.max(1, Math.round(sec / 60)); return L(`🏁 fertig ca. ${fmtClock(sec)} · noch ~${m} Min`, `🏁 done around ${fmtClock(sec)} · ~${m} min left`); }
@@ -1910,14 +1924,35 @@ function WorkoutView(mode, resume) {
         center: h('div', { class: 'meta' }, h('div', { class: 't' }, caption), h('div', { class: 'progress' }, h('i', { style: `width:${pct}%;background:${color}` }))), right: h('div', { class: 'clockwrap' }, clock, eta), footer });
     },
     // Restzeit in Sekunden – passt sich nach ein paar Sätzen an dein echtes Tempo an
+    // Tempo heute: Satz- und Pausendauer getrennt gemessen. Das gelernte Tempo zählt wie 3 Sätze/2 Pausen Vorwissen,
+    // danach bestimmt zunehmend das heutige Training die Prognose.
+    tally: { setAct: 0, setPlan: 0, setN: 0, restAct: 0, restPlan: 0, restN: 0 },
+    tempo() {
+      const P = tempoOf(mode), a = this.tally, Ws = 135, Wr = 120, cl = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+      return { set: cl((P.set * Ws + a.setAct) / (Ws + a.setPlan), .25, 3), rest: cl((P.rest * Wr + a.restAct) / (Wr + a.restPlan), .1, 3), warm: P.warm };
+    },
     etaSec() {
-      const st = STORE.s.settings;
-      if (this.phase === 'warmup') return warmupSec(mode) + (mode === 'rr' && st.skill ? 600 : 0) + stepsCost(this.steps, 0);
-      if (this.phase === 'skill') return Math.max(60, this.skillLeft) + stepsCost(this.steps, 0);
-      let f = 1;
-      if (this.strStart && this.i - this.s0 >= 3) { const done = stepsCost(this.steps, this.s0, this.i); if (done > 0) f = Math.max(0.6, Math.min(2, (Date.now() - this.strStart) / 1000 / done)); }
-      const restLeft = this.restEnd ? Math.max(0, (this.restEnd - Date.now()) / 1000) : 0;
-      return stepsCost(this.steps, this.i) * f + restLeft;
+      const st = STORE.s.settings, now = Date.now(), inPhase = (now - (this.phaseAt || now)) / 1000, T = this.tempo();
+      const plan = from => stepsCost(this.steps, from, null, T.set, T.rest);
+      // Aufwärmen/Skill: schon verstrichene Zeit abziehen
+      if (this.phase === 'warmup') return Math.max(0, T.warm - inPhase) + (mode === 'rr' && st.skill ? 600 : 0) + plan(0);
+      if (this.phase === 'skill') return (this.skillLeft < 600 ? Math.max(30, this.skillLeft) : Math.max(60, 600 - inPhase)) + plan(0);
+      // in der Pause: erwartete Pausenlänge (nach deinem Pausentempo) minus schon vergangene Zeit
+      if (this.restEnd) {
+        const from = this.restFrom || now, planned = (this.restEnd - from) / 1000, el = (now - from) / 1000;
+        return Math.max(0, planned * T.rest - el) + plan(this.i);
+      }
+      // im Satz: Zeit im laufenden Satz abziehen
+      const cur = this.steps[this.i] ? stepCost(this.steps[this.i], T.set) : 0, spent = this.stepAt ? (now - this.stepAt) / 1000 : 0;
+      return plan(this.i) - Math.min(spent, cur);
+    },
+    // am Ende: heutiges Tempo in das gelernte Tempo einfließen lassen (neues Training zählt zur Hälfte)
+    learnTempo() {
+      const a = this.tally; if (a.setN < 4) return;
+      const st = STORE.s.settings, all = st.tempo || (st.tempo = {}), P = tempoOf(mode), cl = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+      const today = { set: cl(a.setAct / a.setPlan, .25, 3), rest: a.restN >= 2 ? cl(a.restAct / a.restPlan, .1, 3) : P.rest, warm: this.warmSec ? cl(this.warmSec, 60, 1800) : P.warm };
+      const al = P.n ? .5 : 1;
+      all[mode] = { set: P.set * (1 - al) + today.set * al, rest: P.rest * (1 - al) + today.rest * al, warm: Math.round(P.warm * (1 - al) + today.warm * al), n: (P.n || 0) + 1 };
     },
     // Stufe während des Trainings wechseln – gilt für die restlichen Sätze und wird gespeichert
     changeLevel(key, after) {
@@ -1939,6 +1974,7 @@ function WorkoutView(mode, resume) {
     render() {
       Wake.wanted = true; Wake.on();
       if (!this.phase) this.phase = STORE.s.settings.warmup ? 'warmup' : (STORE.s.settings.skill && mode === 'rr' ? 'skill' : 'strength');
+      if (!this.phaseAt) this.phaseAt = Date.now();
       if (this.phase === 'warmup') return this.renderWarmup();
       if (this.phase === 'skill') return this.renderSkill();
       return this.renderStep();
@@ -1968,8 +2004,9 @@ function WorkoutView(mode, resume) {
     },
     nextPhase() {
       this.clearTimers();
-      if (this.phase === 'warmup') this.phase = (mode === 'rr' && STORE.s.settings.skill) ? 'skill' : 'strength';
+      if (this.phase === 'warmup') { this.warmSec = (Date.now() - (this.phaseAt || Date.now())) / 1000; this.phase = (mode === 'rr' && STORE.s.settings.skill) ? 'skill' : 'strength'; }
       else if (this.phase === 'skill') this.phase = 'strength';
+      this.phaseAt = Date.now();
       this.persist();
       Nav.refresh(); window.scrollTo(0, 0);
     },
@@ -2002,7 +2039,11 @@ function WorkoutView(mode, resume) {
       if (this.i >= this.steps.length) { this.finish(); return h('div'); }
       const step = this.steps[this.i], p = step.prog ? PROG_BY_KEY[step.prog] : MINP, ex = step.ex; this.ex = ex; this.p = p;
       if (!this.strStart) { this.strStart = Date.now(); this.s0 = this.i; }
-      if (this.shownI !== this.i) { this.shownI = this.i; window.scrollTo(0, 0); }  // neuer Satz → oben beginnen
+      if (this.shownI !== this.i) {   // neuer Satz → oben beginnen, Pausendauer verbuchen, Satzbeginn merken
+        const now = Date.now();
+        if (this.restFrom && this.restPlanned) { const a = this.tally; a.restAct += Math.min((now - this.restFrom) / 1000, this.restPlanned * 2 + 60); a.restPlan += this.restPlanned; a.restN++; }
+        this.restFrom = null; this.shownI = this.i; this.stepAt = now; window.scrollTo(0, 0);
+      }
       const color = pcText(p);
       this.hold = null;
       const doneBtn = this.doneBtn = h('button', { class: 'btn', id: 'wk-done', onclick: () => { const H = this.hold; if (H && !H.running && !H.leading && !H.done) { Snd.unlock(); H.go(); } else this.setDone(); } }, L('Satz fertig ✓', 'Set done ✓'));
@@ -2122,6 +2163,10 @@ function WorkoutView(mode, resume) {
       const mine = this.session.sets.filter(x => x.ex === ex.key), [, hiR] = STORE.range(ex);
       this.goalHit = mode !== 'minimal' && p.key && step.set_no === step.sets && mine.length >= 3 && mine.slice(0, 3).every(x => x.value >= hiR);
       if (this.pr || this.goalHit) vib(30);
+      // Satzdauer verbuchen (Ausreißer begrenzt) und Pausenbeginn merken – für die Restzeit-Prognose
+      const now = Date.now(), plan = stepFlex(step);
+      if (this.stepAt) { const a = this.tally; a.setAct += Math.min(Math.max(0, (now - this.stepAt) / 1000 - stepFixed(step)), plan * 4 + 120); a.setPlan += plan; a.setN++; }
+      this.restFrom = step.rest > 0 ? now : null; this.restPlanned = step.rest || 0;
       this.hold = null; Snd.click(); this.i++;
       this.persist();
       if (this.i >= this.steps.length) { this.finish(); return; }
@@ -2129,6 +2174,7 @@ function WorkoutView(mode, resume) {
     },
     undo(wasSet) {
       this.clearTimers(); this.restEnd = null; if (this.overlay) { this.overlay.remove(); this.overlay = null; }
+      this.restFrom = null;
       if (this.i > 0) { this.i--; if (wasSet && this.session.sets.length) this.session.sets.pop(); }
       this.hold = null; this.persist(); Nav.refresh(); toast(L('Rückgängig gemacht', 'Undone'));
     },
@@ -2194,6 +2240,7 @@ function WorkoutView(mode, resume) {
       this.clearTimers(); clearInterval(this.clockT); if (this.overlay) { this.overlay.remove(); this.overlay = null; }
       this.session.duration = Math.round((Date.now() - this.started) / 1000);
       clearActive();
+      this.learnTempo();
       const sugg = STORE.finishSession(this.session);
       Wake.wanted = false; Wake.off(); Snd.success();
       Nav.stack.pop(); Nav.push(SummaryView(this.session, sugg));

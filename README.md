@@ -4,6 +4,10 @@ Trainings-App für die [Recommended Routine](https://www.reddit.com/r/bodyweight
 
 **Live:** https://voccawind.github.io/rrcoach/
 
+## Dank
+
+Die Recommended Routine stammt von der Community [r/bodyweightfitness](https://www.reddit.com/r/bodyweightfitness/), die sie frei und kostenlos für alle zugänglich macht. Besonderer Dank an [Antranik Kizirian](https://antranik.org/), der die Routine mit seinem ausführlichen Erklärvideo und [seiner Seite zur RR](https://antranik.org/rr/) für unzählige Menschen verständlich gemacht hat. Diese App ist ein unabhängiges Hobbyprojekt und steht in keiner Verbindung zu r/bodyweightfitness oder Antranik.
+
 ## Installation auf dem Smartphone
 
 - **iPhone (Safari):** Seite öffnen, Teilen-Symbol, „Zum Home-Bildschirm“.
